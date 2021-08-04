@@ -6,6 +6,7 @@ from PIL import Image
 import pickle
 
 class ColoredMnist():
+    
     def __init__(self):
         dataset = np.load("colored_mnist_gen/mnist_10color_jitter_var_0.020.npy", encoding="latin1", allow_pickle=True).item()
 
