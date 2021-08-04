@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import colors
 import os
 from PIL import Image
+import pickle
 
 class ColoredMnist():
     def __init__(self):
