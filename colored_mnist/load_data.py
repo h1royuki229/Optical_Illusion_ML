@@ -35,17 +35,18 @@ def recolor_mnist(origin_img):
     return img, color_label
 
 
+if __name__ == '__main__':
 
-dataset = np.load("colored_mnist/mnist_10color_jitter_var_0.020.npy", encoding="latin1", allow_pickle=True).item()
+    dataset = np.load("colored_mnist/mnist_10color_jitter_var_0.020.npy", encoding="latin1", allow_pickle=True).item()
 
-colorlist = ["r", "g", "b", "c", "m", "y", "k", "w"]
-# torch.tensor(colors.to_rgb("y"))
+    colorlist = ["r", "g", "b", "c", "m", "y", "k", "w"]
+    # torch.tensor(colors.to_rgb("y"))
 
-test_img = torch.from_numpy(dataset["test_image"].astype(np.float32)).clone()
-test_label = torch.from_numpy(dataset["test_label"].astype(np.float32)).clone()
-train_img = torch.from_numpy(dataset["train_image"].astype(np.float32)).clone()
-train_label = torch.from_numpy(dataset["train_label"].astype(np.float32)).clone()
+    test_img = torch.from_numpy(dataset["test_image"].astype(np.float32)).clone()
+    test_label = torch.from_numpy(dataset["test_label"].astype(np.float32)).clone()
+    train_img = torch.from_numpy(dataset["train_image"].astype(np.float32)).clone()
+    train_label = torch.from_numpy(dataset["train_label"].astype(np.float32)).clone()
 
 
-recolor_img = recolor_mnist(test_img)
-print()
+    recolor_test_img, test_color_label = recolor_mnist(test_img)
+    recolor_train_img, train_color_label = recolor_mnist(train_img)
