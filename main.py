@@ -3,30 +3,20 @@ import torch.nn as  nn
 import torch.nn.functional as f
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-import matplotlib.pyplot as plt
-from color_net import ColorNet
-from mnist import load_MNIST
-from colored_mnist import ColoredMnist
-from PIL import Image
 import numpy as np
-
-import pickle
-
+import matplotlib.pyplot as plt
 
 
-def cross_entropy(output, target):
-
-    # average(-Σp(x)log(q(x)))
-    loss = torch.mean(torch.mean(target * torch.log(output), dim=1) * -1)
-    return loss
+from color_net import ColorNet
+from colored_mnist import ColoredMnist
+from util import *
 
 
 def main():
 
     # tmp = ColoredMnist()
-    file_name = "colored_mnist_data.pickle"
-    with open(file_name, mode="rb") as f:
-        color_mnist = pickle.load(f)
+    filename = "colored_mnist_data.pickle"
+    color_mnist = load_pickle(filename)
 
     # (サイズk チャネル数, width, height)=(枚数, RGB(3), 28, 28)
     train_img = color_mnist.train_img.permute(0, 3, 2, 1)

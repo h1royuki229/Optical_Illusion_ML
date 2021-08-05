@@ -3,7 +3,9 @@ import numpy as np
 from matplotlib import colors
 import os
 from PIL import Image
-import pickle
+
+from util import *
+
 
 class ColoredMnist():
 
@@ -22,12 +24,7 @@ class ColoredMnist():
         self.normal_test_img, self.test_color_label = self.recolor_mnist(test_img)
         self.ill_test_img, self.ill_color_label = self.illusion_mnist(test_img)
 
-        self.dump_pickle("colored_mnist_data.pickle", self)
-
-
-    def dump_pickle(self, file, obj):
-        with open(file, mode="wb") as f:
-            pickle.dump(obj, f)
+        dump_pickle("colored_mnist_data.pickle", self)
 
 
     def one_img_show(self, img):
