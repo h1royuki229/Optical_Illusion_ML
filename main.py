@@ -3,18 +3,28 @@ import torch.nn.functional as f
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
-from SimpleNet import SimpleNet
-from util import use_gpu
+from color_net import ColorNet
 from mnist import load_MNIST
+from colored_mnist import ColoredMnist
+from PIL import Image
+import numpy as np
+
+import pickle
 
 
-def use_gpu(e):
-    if torch.cuda.is_available():
-        return e.cuda()
-    return e
 
 def main():
 
+    # tmp = ColoredMnist()
+    file_name = "colored_mnist_data.pickle"
+    with open(file_name, mode="rb") as f:
+        color_mnist = pickle.load(f)
+
+    # (サイズk チャネル数, width, height)=(枚数, RGB(3), 28, 28)
+    train_img = color_mnist.train_img.permute(0, 3, 2, 1)
+    dataset = torch.utils.data.TensorDataset(train_img, color_mnist.train_color_label)
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     epochs = 20
 
     history = {
@@ -23,9 +33,8 @@ def main():
         'test_acc': [],
     }
 
-    net: torch.nn.Module = SimpleNet()
-    net = use_gpu(net)
-    loaders = load_MNIST()
+    net: torch.nn.Module = ColorNet(len(color_mnist.colorlist))
+    net.to(device)
 
     optimizer = torch.optim.Adam(params=net.parameters(), lr=0.001)
 
@@ -35,13 +44,13 @@ def main():
         # 学習開始・再開
         net.train(True)
 
-        for i, (data, target) in enumerate(loaders['train']):
+        for i, (data, target) in enumerate(dataloader):
 
-            data = use_gpu(data)
-            target = use_gpu(target)
+            data = data.to(device)
+            target = target.to(device)
 
             # 全結合のみのネットワークでは入力を1次元にする
-            data = data.view(-1, 28*28)
+            # data = data.view(-1, 28*28)
 
             optimizer.zero_grad()
             output = net(data)
@@ -68,8 +77,8 @@ def main():
         with torch.no_grad(): # テスト部分では勾配は使わない
             for data, target in loaders['test']:
 
-                data = use_gpu(data)
-                target = use_gpu(target)
+                data = data.to(device)
+                target = target.to(device)
 
                 data = data.view(-1, 28*28)
                 output = net(data)
