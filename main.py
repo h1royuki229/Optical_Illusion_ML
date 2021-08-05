@@ -1,5 +1,5 @@
 import torch
-import torch.nn as  nn
+import torch.nn as nn
 import torch.nn.functional as f
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
@@ -18,27 +18,29 @@ def main():
     filename = "colored_mnist_data.pickle"
     color_mnist = load_pickle(filename)
 
-    # (サイズk チャネル数, width, height)=(枚数, RGB(3), 28, 28)
-    train_img = color_mnist.train_img.permute(0, 3, 2, 1)
-    dataset = torch.utils.data.TensorDataset(train_img, color_mnist.train_color_label)
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     epochs = 20
 
     history = {
         'train_loss': [],
-        'test_loss': [],
         'test_acc': [],
+        'ill_test_acc': []
     }
 
-    net: torch.nn.Module = ColorNet(len(color_mnist.colorlist))
+    net = ColorNet(len(color_mnist.colorlist))
     net.to(device)
-    loss_func = nn.CrossEntropyLoss()
 
     optimizer = torch.optim.Adam(params=net.parameters(), lr=0.001)
+    loss_func = torch.nn.CrossEntropyLoss()
+
+    ############################ Train Model ############################
+    # (サイズk チャネル数, width, height)=(枚数, RGB(3), 28, 28)
+    train_img = color_mnist.train_img.permute(0, 3, 2, 1)
+    dataset = torch.utils.data.TensorDataset(train_img, color_mnist.train_color_label)
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
 
     for epoch in range(epochs):
-        loss = None
+        loss_list = []
         net.train()
 
         for i, (data, target) in enumerate(dataloader):
@@ -48,64 +50,65 @@ def main():
 
             optimizer.zero_grad()
             output = net(data)
-            # loss = loss_func(output, target)
-            loss = cross_entropy(output, target)
+            loss = loss_func(output, target.long())
+            loss_list.append(loss.item())
             loss.backward()
             optimizer.step()
 
-            if i % 10 == 0:
-                print('Training log: {} epoch({} / 60000 train. data). Loss: {}'.format(epoch+1,
-                                                                                        (i+1)*128,
-                                                                                        loss.item()
-                                                                                        )
-                )
+        history['train_loss'].append(sum(loss_list)/len(loss_list))
 
-        history['train_loss'].append(loss)
+    ############################ Test Model ############################
+    test_img = color_mnist.normal_test_img.permute(0, 3, 2, 1)
+    test_size = test_img.shape[0]
+    dataset = torch.utils.data.TensorDataset(test_img, color_mnist.test_color_label)
+    dataloader = DataLoader(dataset, batch_size=1)
 
-        net.eval()
-        test_loss = 0
-        correct = 0
+    net.eval()
+    test_loss = []
+    correct = 0
 
-        with torch.no_grad():
-            for data, target in loaders['test']:
+    calc_softmax = nn.Softmax()
 
-                data = data.to(device)
-                target = target.to(device)
+    with torch.no_grad():
+        for i, (data, target) in enumerate(dataloader):
 
-                data = data.view(-1, 28*28)
-                output = net(data)
-                test_loss += f.nll_loss(output, target, reduction='sum').item()
-                pred = output.argmax(dim=1, keepdim=True)
-                correct += pred.eq(target.view_as(pred)).sum().item()
+            data = data.to(device)
+            target = target.to(device)
 
-        test_loss /= 10000
+            output = net(data)
+            output = calc_softmax(output)
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(target.view_as(pred)).sum().item()
 
-        print('Test loss (avg): {}, Accuracy: {}'.format(test_loss,
-                                                         correct / 10000
-                                                        )
-        )
-
-        history['test_loss'].append(test_loss)
-        history['test_acc'].append(correct / 10000)
+    history['test_acc'].append((correct/test_size) * 100)
 
 
-    # 結果の出力と描画
+    ############################ Illusion Test Model ############################
+    test_img = color_mnist.ill_test_img.permute(0, 3, 2, 1)
+    test_size = test_img.shape[0]
+    dataset = torch.utils.data.TensorDataset(test_img, color_mnist.ill_color_label)
+    dataloader = DataLoader(dataset, batch_size=1)
+
+    net.eval()
+    ill_test_loss = []
+    ill_correct = 0
+
+    with torch.no_grad():
+        for i, (data, target) in enumerate(dataloader):
+
+            data = data.to(device)
+            target = target.to(device)
+
+            output = net(data)
+            output = calc_softmax(output)
+            pred = output.argmax(dim=1, keepdim=True)
+            ill_correct += pred.eq(target.view_as(pred)).sum().item()
+
+    history['ill_test_acc'].append((ill_correct/test_size) * 100)
+
+
+    # 結果の出力
     print(history)
-    plt.figure()
-    plt.plot(range(1, epoch+2), history['train_loss'], label='train_loss')
-    plt.plot(range(1, epoch+2), history['test_loss'], label='test_loss')
-    plt.xlabel('epoch')
-    plt.legend()
-    # plt.savefig('loss.png')
-    plt.show()
-
-    plt.figure()
-    plt.plot(range(1, epoch+2), history['test_acc'])
-    plt.title('test accuracy')
-    plt.xlabel('epoch')
-    # plt.savefig('test_acc.png')
-    plt.show()
-
 
 if __name__ == '__main__':
     main()

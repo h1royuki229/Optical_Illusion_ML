@@ -20,9 +20,9 @@ class ColoredMnist():
         self.train_label = torch.from_numpy(dataset["train_label"].astype(np.float32)).clone()
 
 
-        self.train_img, self.train_color_label = self.recolor_mnist(train_img)
-        self.normal_test_img, self.test_color_label = self.recolor_mnist(test_img)
-        self.ill_test_img, self.ill_color_label = self.illusion_mnist(test_img)
+        self.train_img, self.train_color_label, self.train_one_hot = self.recolor_mnist(train_img)
+        self.normal_test_img, self.test_color_label, self.test_one_hot = self.recolor_mnist(test_img)
+        self.ill_test_img, self.ill_color_label, self.ill_one_hot = self.illusion_mnist(test_img)
 
         dump_pickle("colored_mnist_data.pickle", self)
 
@@ -36,7 +36,8 @@ class ColoredMnist():
     def recolor_mnist(self, origin_img):
         img = origin_img
         # one-hot表記にする
-        color_label = torch.zeros(origin_img.shape[0], len(self.colorlist))
+        color_label = torch.zeros(origin_img.shape[0])
+        color_one_hot = torch.zeros(origin_img.shape[0], len(self.colorlist))
 
         for i in range(img.shape[0]):
             shape = img[i].shape
@@ -54,16 +55,19 @@ class ColoredMnist():
                     img_array[j] = back_rgb
 
             img[i] = img_array.view(shape)
+
+            color_label[i] = color_num
             one_hot = torch.zeros(len(self.colorlist))
             one_hot[color_num] = 1
-            color_label[i] = one_hot
+            color_one_hot[i] = one_hot
 
-        return img, color_label
+        return img, color_label, color_one_hot
 
 
     def illusion_mnist(self, origin_img):
         img = origin_img
         color_label = torch.zeros(origin_img.shape[0])
+        color_one_hot = torch.zeros(origin_img.shape[0], len(self.colorlist))
 
         for i in range(img.shape[0]):
             shape = img[i].shape
@@ -92,9 +96,13 @@ class ColoredMnist():
                 if j <= shape[1]-2:
                     img[i][:,j:j+2,:] = ill_rgb
 
-            color_label[i] = color_num
 
-        return img, color_label
+            color_label[i] = color_num
+            one_hot = torch.zeros(len(self.colorlist))
+            one_hot[color_num] = 1
+            color_one_hot[i] = one_hot
+
+        return img, color_label, color_one_hot
 
 
     def imgs_show(self, imgs):
