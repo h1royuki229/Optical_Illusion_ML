@@ -14,9 +14,16 @@ import pickle
 
 
 
+def cross_entropy(output, target):
+
+    # average(-Σp(x)log(q(x)))
+    loss = torch.mean(torch.mean(target * torch.log(output), dim=1) * -1)
+    return loss
+
+
 def main():
 
-    tmp = ColoredMnist()
+    # tmp = ColoredMnist()
     file_name = "colored_mnist_data.pickle"
     with open(file_name, mode="rb") as f:
         color_mnist = pickle.load(f)
@@ -42,21 +49,17 @@ def main():
 
     for epoch in range(epochs):
         loss = None
-
-        # 学習開始・再開
-        net.train(True)
+        net.train()
 
         for i, (data, target) in enumerate(dataloader):
 
             data = data.to(device)
             target = target.to(device)
 
-            # 全結合のみのネットワークでは入力を1次元にする
-            # data = data.view(-1, 28*28)
-
             optimizer.zero_grad()
             output = net(data)
-            loss = loss_func(output, target)
+            # loss = loss_func(output, target)
+            loss = cross_entropy(output, target)
             loss.backward()
             optimizer.step()
 
@@ -69,14 +72,11 @@ def main():
 
         history['train_loss'].append(loss)
 
-        # 学習停止
         net.eval()
-        # net.train(False)
-
         test_loss = 0
         correct = 0
 
-        with torch.no_grad(): # テスト部分では勾配は使わない
+        with torch.no_grad():
             for data, target in loaders['test']:
 
                 data = data.to(device)
