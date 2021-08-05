@@ -6,7 +6,7 @@ from PIL import Image
 import pickle
 
 class ColoredMnist():
-    
+
     def __init__(self):
         dataset = np.load("colored_mnist_gen/mnist_10color_jitter_var_0.020.npy", encoding="latin1", allow_pickle=True).item()
 
@@ -38,7 +38,8 @@ class ColoredMnist():
 
     def recolor_mnist(self, origin_img):
         img = origin_img
-        color_label = torch.zeros(origin_img.shape[0])
+        # one-hot表記にする
+        color_label = torch.zeros(origin_img.shape[0], len(self.colorlist))
 
         for i in range(img.shape[0]):
             shape = img[i].shape
@@ -56,7 +57,9 @@ class ColoredMnist():
                     img_array[j] = back_rgb
 
             img[i] = img_array.view(shape)
-            color_label[i] = color_num
+            one_hot = torch.zeros(len(self.colorlist))
+            one_hot[color_num] = 1
+            color_label[i] = one_hot
 
         return img, color_label
 

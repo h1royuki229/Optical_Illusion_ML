@@ -15,6 +15,7 @@ class ColorNet(torch.nn.Module):
         self.pool2 = nn.MaxPool2d(2)
         self.fc = nn.Linear(100, color_num)
         self.relu = nn.ReLU()
+        self.softmax = nn.Softmax()
 
 
     def forward(self, x):
@@ -30,6 +31,6 @@ class ColorNet(torch.nn.Module):
         # Linearに入力するために1次元にする
         x = x.view(batch_size, -1)
         x = self.fc(x)
-
+        x = self.softmax(x)
 
         return x

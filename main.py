@@ -1,4 +1,5 @@
 import torch
+import torch.nn as  nn
 import torch.nn.functional as f
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
@@ -15,7 +16,7 @@ import pickle
 
 def main():
 
-    # tmp = ColoredMnist()
+    tmp = ColoredMnist()
     file_name = "colored_mnist_data.pickle"
     with open(file_name, mode="rb") as f:
         color_mnist = pickle.load(f)
@@ -35,6 +36,7 @@ def main():
 
     net: torch.nn.Module = ColorNet(len(color_mnist.colorlist))
     net.to(device)
+    loss_func = nn.CrossEntropyLoss()
 
     optimizer = torch.optim.Adam(params=net.parameters(), lr=0.001)
 
@@ -54,7 +56,7 @@ def main():
 
             optimizer.zero_grad()
             output = net(data)
-            loss = f.nll_loss(output, target)
+            loss = loss_func(output, target)
             loss.backward()
             optimizer.step()
 
