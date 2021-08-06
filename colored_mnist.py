@@ -12,7 +12,8 @@ class ColoredMnist():
     def __init__(self):
         dataset = np.load("colored_mnist_gen/mnist_10color_jitter_var_0.020.npy", encoding="latin1", allow_pickle=True).item()
 
-        self.colorlist = ["r", "g", "b", "c", "m", "y", "k", "w"]
+        # self.colorlist = ["r", "g", "b", "c", "m", "y", "k", "w"]
+        self.colorlist = ["r", "g", "c", "m", "y"]
 
         test_img = torch.from_numpy(dataset["test_image"].astype(np.float32)).clone()
         self.test_label = torch.from_numpy(dataset["test_label"].astype(np.float32)).clone()
@@ -20,8 +21,8 @@ class ColoredMnist():
         self.train_label = torch.from_numpy(dataset["train_label"].astype(np.float32)).clone()
 
 
-        self.train_img, self.train_color_label, self.train_one_hot = self.recolor_mnist(train_img)
-        self.normal_test_img, self.test_color_label, self.test_one_hot = self.recolor_mnist(test_img)
+        self.train_img, self.train_color_label, self.train_one_hot = self.recolor_mnist(train_img, 1)
+        self.normal_test_img, self.test_color_label, self.test_one_hot = self.recolor_mnist(test_img, 1)
         self.ill_test_img, self.ill_color_label, self.ill_one_hot = self.illusion_mnist(test_img)
 
         dump_pickle("colored_mnist_data.pickle", self)
@@ -33,15 +34,20 @@ class ColoredMnist():
         return pil_img
 
 
-    def recolor_mnist(self, origin_img):
+    def recolor_mnist(self, origin_img, loop):
         img = origin_img
-        # one-hot表記にする
-        color_label = torch.zeros(origin_img.shape[0])
-        color_one_hot = torch.zeros(origin_img.shape[0], len(self.colorlist))
+        copy_img = torch.zeros((img.shape[0]*loop, img.shape[1], img.shape[2], img.shape[3]))
 
-        for i in range(img.shape[0]):
-            shape = img[i].shape
-            img_array = img[i].view(-1, 3)
+        for l in range(loop):
+            copy_img[img.shape[0]*l:img.shape[0]*(l+1)] = img
+
+        # one-hot表記にする
+        color_label = torch.zeros(origin_img.shape[0]*loop)
+        color_one_hot = torch.zeros(origin_img.shape[0]*loop, len(self.colorlist))
+
+        for i in range(copy_img.shape[0]):
+            shape = copy_img[i].shape
+            img_array = copy_img[i].view(-1, 3)
             i_color = np.random.choice(len(self.colorlist), size=2, replace=False)
             color_num = i_color[0]
             background_num = i_color[1]
@@ -54,14 +60,14 @@ class ColoredMnist():
                 else:
                     img_array[j] = back_rgb
 
-            img[i] = img_array.view(shape)
+            copy_img[i] = img_array.view(shape)
 
             color_label[i] = color_num
             one_hot = torch.zeros(len(self.colorlist))
             one_hot[color_num] = 1
             color_one_hot[i] = one_hot
 
-        return img, color_label, color_one_hot
+        return copy_img, color_label, color_one_hot
 
 
     def illusion_mnist(self, origin_img):
@@ -76,7 +82,7 @@ class ColoredMnist():
             color_num = i_color[0]
             background_num = i_color[1]
             illusion_num = i_color[2]
-            illusion_width = 2
+            illusion_width = 1
             digit_rgb = torch.tensor(colors.to_rgb(self.colorlist[color_num]))
             back_rgb = torch.tensor(colors.to_rgb(self.colorlist[background_num]))
             ill_rgb = torch.tensor(colors.to_rgb(self.colorlist[illusion_num]))
@@ -93,8 +99,8 @@ class ColoredMnist():
 
             # 縦線を入れる(左右対称に入るように1から)
             for j in range(1, shape[1], illusion_width*2):
-                if j <= shape[1]-2:
-                    img[i][:,j:j+2,:] = ill_rgb
+                if j <= shape[1]-1:
+                    img[i][:,j:j+1,:] = ill_rgb
 
 
             color_label[i] = color_num
