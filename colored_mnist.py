@@ -30,7 +30,7 @@ class ColoredMnist():
 
     def one_img_show(self, img):
         pil_img = Image.fromarray(np.uint8(img*255))
-        # pil_img.show()
+        pil_img.show()
         return pil_img
 
 

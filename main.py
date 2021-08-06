@@ -57,6 +57,36 @@ def main():
 
         history['train_loss'].append(sum(loss_list)/len(loss_list))
 
+    ############################ Test Model(use train_data) ############################
+    test_img = color_mnist.train_img.permute(0, 3, 2, 1)
+    test_size = test_img.shape[0]
+    dataset = torch.utils.data.TensorDataset(test_img, color_mnist.train_color_label)
+    dataloader = DataLoader(dataset, batch_size=1)
+
+    net.eval()
+    test_loss = []
+    correct = 0
+
+    calc_softmax = nn.Softmax()
+
+    with torch.no_grad():
+        for i, (data, target) in enumerate(dataloader):
+
+            data = data.to(device)
+            target = target.to(device)
+
+            output = net(data)
+            output = calc_softmax(output)
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+    history['test_acc'].append((correct/test_size) * 100)
+
+    print("Train Accuracy")
+    print((correct/test_size) * 100)
+
+
+
     ############################ Test Model ############################
     test_img = color_mnist.normal_test_img.permute(0, 3, 2, 1)
     test_size = test_img.shape[0]
@@ -92,6 +122,8 @@ def main():
     net.eval()
     ill_test_loss = []
     ill_correct = 0
+    wrong_index = []
+    wrong_output = []
 
     with torch.no_grad():
         for i, (data, target) in enumerate(dataloader):
@@ -103,6 +135,14 @@ def main():
             output = calc_softmax(output)
             pred = output.argmax(dim=1, keepdim=True)
             ill_correct += pred.eq(target.view_as(pred)).sum().item()
+
+            # 認識が間違っていた場合
+            if pred.eq(target.view_as(pred)).sum().item() == 0:
+                wrong_index.append(i)
+                wrong_output.append(pred)
+
+
+    color_mnist.one_img_show(color_mnist.ill_test_img[wrong_index[0]])
 
     history['ill_test_acc'].append((ill_correct/test_size) * 100)
 
