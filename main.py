@@ -8,7 +8,7 @@ from util import *
 def main(create_data):
 
     if create_data:
-        color_mnist = ColoredMnist()
+        color_mnist = ColoredMnist(LOOP)
     else:
         filename = "colored_mnist_data.pickle"
         color_mnist = load_pickle(filename)

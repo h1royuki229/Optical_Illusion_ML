@@ -9,7 +9,7 @@ from util import *
 
 class ColoredMnist():
 
-    def __init__(self):
+    def __init__(self, loop):
         dataset = np.load("colored_mnist_gen/mnist_10color_jitter_var_0.020.npy", encoding="latin1", allow_pickle=True).item()
 
         # self.colorlist = ["r", "g", "b", "c", "m", "y", "k", "w"]
@@ -21,8 +21,8 @@ class ColoredMnist():
         self.train_label = torch.from_numpy(dataset["train_label"].astype(np.float32)).clone()
 
 
-        self.train_img, self.train_color_label, self.train_one_hot = self.recolor_mnist(train_img, 1)
-        self.normal_test_img, self.test_color_label, self.test_one_hot = self.recolor_mnist(test_img, 1)
+        self.train_img, self.train_color_label, self.train_one_hot = self.recolor_mnist(train_img, loop)
+        self.normal_test_img, self.test_color_label, self.test_one_hot = self.recolor_mnist(test_img, loop)
         self.ill_test_img, self.ill_color_label, self.ill_one_hot = self.illusion_mnist(test_img)
 
         dump_pickle("colored_mnist_data.pickle", self)
